@@ -1,3 +1,4 @@
+cat > ~/workspace/github.com/danahiju/interview-2/.github/workflows/ci.yml << 'EOF'
 name: CI/CD Pipeline
 
 on:
@@ -17,62 +18,76 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: |
-          pip install -r app/requirements.txt
+        run: pip install -r app/requirements.txt
 
       - name: Run tests
-        run: |
-          python -m pytest app/tests/ -v
+        run: python -m pytest app/tests/ -v
 
-  build-and-push:
+  build:
     needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Login to ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build Docker image
+        run: docker build -f docker/Dockerfile -t asterra-processor:latest .
 
       - name: Bump version
         id: version
         run: |
           VERSION=$(date +%Y%m%d%H%M%S)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Built version $VERSION"
 
-      - name: Build and push image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ steps.version.outputs.version }}
-        run: |
-          docker build -f docker/Dockerfile -t $ECR_REGISTRY/asterra-processor:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/asterra-processor:$IMAGE_TAG
+      # ── ECR push (requires real AWS credentials) ──────────────
+      # Uncomment when deploying to real AWS:
+      #
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     aws-region: us-east-1
+      #
+      # - name: Login to ECR
+      #   id: login-ecr
+      #   uses: aws-actions/amazon-ecr-login@v2
+      #
+      # - name: Push to ECR
+      #   env:
+      #     ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+      #     IMAGE_TAG: ${{ steps.version.outputs.version }}
+      #   run: |
+      #     docker tag asterra-processor:latest $ECR_REGISTRY/asterra-processor:$IMAGE_TAG
+      #     docker push $ECR_REGISTRY/asterra-processor:$IMAGE_TAG
 
   deploy:
-    needs: build-and-push
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
-      - name: Terraform apply
+      - name: Terraform init and validate
         run: |
           cd terraform
           terraform init
-          terraform apply -auto-approve
+          terraform validate
+
+      # ── Full deploy (requires real AWS credentials) ───────────
+      # Uncomment when deploying to real AWS:
+      #
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     aws-region: us-east-1
+      #
+      # - name: Terraform apply
+      #   run: |
+      #     cd terraform
+      #     terraform apply -auto-approve
+EOF
