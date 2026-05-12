@@ -11,5 +11,21 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  app:
+    image: asterra-processor:latest
+    container_name: asterra-app
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: asterra_db
+      DB_USER: asterra_user
+      DB_PASSWORD: localstack_pass
+      S3_ENDPOINT: http://host.gateway.internal:4566
+      AWS_REGION: us-east-1
+    ports:
+      - "5000:5000"
+    depends_on:
+      - postgres
+
 volumes:
   postgres_data:
