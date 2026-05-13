@@ -6,7 +6,10 @@ RUN apt-get update && apt-get install -y \
     libgdal-dev \
     libpq-dev \
     gcc \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir gdal==3.10.3
 
 WORKDIR /app
 

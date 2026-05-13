@@ -122,5 +122,20 @@ def process(bucket, key):
         logger.error(f"Processing error: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+
+@app.route("/gdal/info", methods=["POST"])
+def gdal_info():
+    try:
+        from osgeo import gdal, ogr
+        driver = ogr.GetDriverByName("GeoJSON")
+        version = gdal.VersionInfo()
+        return jsonify({
+            "status": "ok",
+            "gdal_version": version,
+            "geojson_driver": driver is not None
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
