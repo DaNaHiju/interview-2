@@ -1,0 +1,9 @@
+repositories: []
+
+releases:
+  - name: asterra
+    chart: ./k8s/asterra
+    namespace: asterra
+    createNamespace: true
+    values:
+      - ./k8s/asterra/values.yaml

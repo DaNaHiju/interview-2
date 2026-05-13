@@ -1,0 +1,24 @@
+postgres:
+  image: postgis/postgis:15-3.3
+  db: asterra_db
+  user: asterra_user
+  password: localstack_pass
+  storage: 1Gi
+
+app:
+  image: asterra-processor:latest
+  port: 5000
+  replicas: 1
+
+wordpress:
+  image: wordpress:latest
+  port: 8080
+  replicas: 1
+
+mysql:
+  image: mysql:8.0
+  db: wp_db
+  user: wp_user
+  password: wp_pass
+  rootPassword: root_pass
+  storage: 1Gi

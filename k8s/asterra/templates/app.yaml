@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: asterra-app
+spec:
+  replicas: {{ .Values.app.replicas }}
+  selector:
+    matchLabels:
+      app: asterra-app
+  template:
+    metadata:
+      labels:
+        app: asterra-app
+    spec:
+      containers:
+        - name: asterra-app
+          image: {{ .Values.app.image }}
+          imagePullPolicy: Never
+          env:
+            - name: DB_HOST
+              value: postgres
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: {{ .Values.postgres.db }}
+            - name: DB_USER
+              value: {{ .Values.postgres.user }}
+            - name: DB_PASSWORD
+              value: {{ .Values.postgres.password }}
+            - name: S3_ENDPOINT
+              value: "http://host.minikube.internal:4566"
+            - name: AWS_REGION
+              value: "us-east-1"
+          ports:
+            - containerPort: {{ .Values.app.port }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: asterra-app
+spec:
+  type: NodePort
+  selector:
+    app: asterra-app
+  ports:
+    - port: {{ .Values.app.port }}
+      targetPort: {{ .Values.app.port }}
+      nodePort: 30500
